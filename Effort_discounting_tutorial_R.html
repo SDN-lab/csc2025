@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Simulating and Fitting Effort Discounting Models</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Effort_discounting_tutorial_R_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Effort_discounting_tutorial_R_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Effort_discounting_tutorial_R_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Effort_discounting_tutorial_R_files/libs/quarto-html/popper.min.js"></script>
+<script src="Effort_discounting_tutorial_R_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Effort_discounting_tutorial_R_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Effort_discounting_tutorial_R_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Effort_discounting_tutorial_R_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Effort_discounting_tutorial_R_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Effort_discounting_tutorial_R_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Effort_discounting_tutorial_R_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#define-and-simulate-model" id="toc-define-and-simulate-model" class="nav-link active" data-scroll-target="#define-and-simulate-model">Define and simulate model</a>
+  <ul class="collapse">
+  <li><a href="#set-up-data-to-match-pro-environmental-effort-experiment" id="toc-set-up-data-to-match-pro-environmental-effort-experiment" class="nav-link" data-scroll-target="#set-up-data-to-match-pro-environmental-effort-experiment">Set up data to match pro-environmental effort experiment</a></li>
+  <li><a href="#simulate-choices-using-known-discount-k-and-beta-parameters" id="toc-simulate-choices-using-known-discount-k-and-beta-parameters" class="nav-link" data-scroll-target="#simulate-choices-using-known-discount-k-and-beta-parameters">Simulate choices using known discount (k) and beta parameters</a></li>
+  <li><a href="#calculate-softmax" id="toc-calculate-softmax" class="nav-link" data-scroll-target="#calculate-softmax">Calculate softmax</a></li>
+  <li><a href="#simulate-choices-from-probabilities" id="toc-simulate-choices-from-probabilities" class="nav-link" data-scroll-target="#simulate-choices-from-probabilities">Simulate choices from probabilities</a></li>
+  </ul></li>
+  <li><a href="#fit-model-using-maximum-likelihood-estimation-mle" id="toc-fit-model-using-maximum-likelihood-estimation-mle" class="nav-link" data-scroll-target="#fit-model-using-maximum-likelihood-estimation-mle">Fit model using Maximum Likelihood Estimation (MLE)</a>
+  <ul class="collapse">
+  <li><a href="#use-optim-to-guess-the-true-parameters" id="toc-use-optim-to-guess-the-true-parameters" class="nav-link" data-scroll-target="#use-optim-to-guess-the-true-parameters">Use optim() to “guess” the true parameters</a></li>
+  </ul></li>
+  <li><a href="#simulate-range-of-parameters-to-check-model-robustness" id="toc-simulate-range-of-parameters-to-check-model-robustness" class="nav-link" data-scroll-target="#simulate-range-of-parameters-to-check-model-robustness">Simulate range of parameters to check model robustness</a>
+  <ul class="collapse">
+  <li><a href="#simulate-using-a-set-range-of-parameter-values" id="toc-simulate-using-a-set-range-of-parameter-values" class="nav-link" data-scroll-target="#simulate-using-a-set-range-of-parameter-values">Simulate using a set range of parameter values</a></li>
+  <li><a href="#simulate-using-uniform-distribution-of-parameter-values" id="toc-simulate-using-uniform-distribution-of-parameter-values" class="nav-link" data-scroll-target="#simulate-using-uniform-distribution-of-parameter-values">Simulate using uniform distribution of parameter values</a></li>
+  <li><a href="#example-with-higher-number-of-trials-for-each-participant" id="toc-example-with-higher-number-of-trials-for-each-participant" class="nav-link" data-scroll-target="#example-with-higher-number-of-trials-for-each-participant">Example with higher number of trials for each participant</a></li>
+  </ul></li>
+  <li><a href="#fitting-different-types-of-models" id="toc-fitting-different-types-of-models" class="nav-link" data-scroll-target="#fitting-different-types-of-models">Fitting different types of models</a>
+  <ul class="collapse">
+  <li><a href="#fit-a-linear-model" id="toc-fit-a-linear-model" class="nav-link" data-scroll-target="#fit-a-linear-model">Fit a linear model</a></li>
+  <li><a href="#fit-a-parabolic-model" id="toc-fit-a-parabolic-model" class="nav-link" data-scroll-target="#fit-a-parabolic-model">Fit a parabolic model</a></li>
+  <li><a href="#things-to-think-about" id="toc-things-to-think-about" class="nav-link" data-scroll-target="#things-to-think-about">Things to think about</a></li>
+  <li><a href="#fit-a-hyperbolic-model" id="toc-fit-a-hyperbolic-model" class="nav-link" data-scroll-target="#fit-a-hyperbolic-model">Fit a hyperbolic model</a></li>
+  </ul></li>
+  <li><a href="#calculate-aicbic-to-compare-models" id="toc-calculate-aicbic-to-compare-models" class="nav-link" data-scroll-target="#calculate-aicbic-to-compare-models">Calculate AIC/BIC to compare models</a>
+  <ul class="collapse">
+  <li><a href="#compare-log-likelihoods" id="toc-compare-log-likelihoods" class="nav-link" data-scroll-target="#compare-log-likelihoods">Compare Log-Likelihoods</a></li>
+  <li><a href="#calculate-aic" id="toc-calculate-aic" class="nav-link" data-scroll-target="#calculate-aic">Calculate AIC</a></li>
+  <li><a href="#calculate-bic" id="toc-calculate-bic" class="nav-link" data-scroll-target="#calculate-bic">Calculate BIC</a></li>
+  <li><a href="#fitting-multiple-k-and-beta-parameters" id="toc-fitting-multiple-k-and-beta-parameters" class="nav-link" data-scroll-target="#fitting-multiple-k-and-beta-parameters">Fitting multiple k and beta parameters</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Simulating and Fitting Effort Discounting Models</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This file is adapted from the original Matlab file used for the intro tutorial at the CSC 2025 summer school. For more details please see the original Matlab .mlx file.</p>
+<p>More information: Wilson &amp; Collins, 2019, <em>eLife</em> is an excellent resource for doing computational modelling.</p>
+<p>Desmos graphing calculator is useful when developing models: <a href="https://www.desmos.com/calculator" class="uri">https://www.desmos.com/calculator</a></p>
+<p>Effort discounting online app: <a href="https://sdn-lab.github.io/csc_app/" class="uri">https://sdn-lab.github.io/csc_app/</a></p>
+<p>My email: <a href="mailto:t.vogel@bham.ac.uk" class="email">t.vogel@bham.ac.uk</a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">03092025</span>) <span class="co"># set randomizer seed</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"simulateData.R"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"fitModel.R"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="define-and-simulate-model" class="level2">
+<h2 class="anchored" data-anchor-id="define-and-simulate-model">Define and simulate model</h2>
+<section id="set-up-data-to-match-pro-environmental-effort-experiment" class="level3">
+<h3 class="anchored" data-anchor-id="set-up-data-to-match-pro-environmental-effort-experiment">Set up data to match pro-environmental effort experiment</h3>
+<p><span class="math inline">\(SV = R - (E*k)\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>reward <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">times =</span> <span class="dv">8</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>effort <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">each =</span> <span class="dv">6</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">data.frame</span>(reward, effort)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   reward effort
+1       2      2
+2       3      2
+3       4      2
+4       2      2
+5       3      2
+6       4      2
+7       2      3
+8       3      3
+9       4      3
+10      2      3
+11      3      3
+12      4      3
+13      2      4
+14      3      4
+15      4      4
+16      2      4
+17      3      4
+18      4      4
+19      2      5
+20      3      5
+21      4      5
+22      2      5
+23      3      5
+24      4      5</code></pre>
+</div>
+</div>
+</section>
+<section id="simulate-choices-using-known-discount-k-and-beta-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="simulate-choices-using-known-discount-k-and-beta-parameters">Simulate choices using known discount (k) and beta parameters</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fix parameters for simulating data </span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>k_param_true <span class="ot">=</span> <span class="fl">0.5</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>beta_param_true <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define model formula </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>SV <span class="ot">=</span> reward <span class="sc">-</span> (effort <span class="sc">*</span> k_param_true)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><span class="math inline">\(SV=reward-(effort*0.5)\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>SV <span class="ot">=</span> SV</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="calculate-softmax" class="level3">
+<h3 class="anchored" data-anchor-id="calculate-softmax">Calculate softmax</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># (Predicted probabilities of choosing "work" option) </span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>prob <span class="ot">=</span> <span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">/</span> (<span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">*</span> beta_param_true))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><span class="math inline">\(\sigma(x_i) = \frac{exp(x_i)}{\sum^n_{j=1} exp(x_j)}\)</span></p>
+<p><span class="math inline">\(Pr(work) = \frac{exp(SV_{work}*\beta)}{exp(SV_{work}*\beta)+exp(1*\beta)}\)</span></p>
+</section>
+<section id="simulate-choices-from-probabilities" class="level3">
+<h3 class="anchored" data-anchor-id="simulate-choices-from-probabilities">Simulate choices from probabilities</h3>
+<p>First generate a list of random numbers (0-1).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>random_nums <span class="ot">=</span> <span class="fu">runif</span>(<span class="fu">length</span>(prob))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Use them to ‘simulate’ choices.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>choices <span class="ot">=</span> prob <span class="sc">&gt;</span> random_nums</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>prob <span class="ot">=</span> prob</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>random_num <span class="ot">=</span> random_nums</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>choices <span class="ot">=</span> choices</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   reward effort   SV      prob random_num choices
+1       2      2  1.0 0.5000000  0.1650868    TRUE
+2       3      2  2.0 0.7310586  0.4052381    TRUE
+3       4      2  3.0 0.8807971  0.1682911    TRUE
+4       2      2  1.0 0.5000000  0.1227712    TRUE
+5       3      2  2.0 0.7310586  0.7725259   FALSE
+6       4      2  3.0 0.8807971  0.5967035    TRUE
+7       2      3  0.5 0.3775407  0.4287812   FALSE
+8       3      3  1.5 0.6224593  0.7410001   FALSE
+9       4      3  2.5 0.8175745  0.2958751    TRUE
+10      2      3  0.5 0.3775407  0.7610878   FALSE
+11      3      3  1.5 0.6224593  0.5209713    TRUE
+12      4      3  2.5 0.8175745  0.3982906    TRUE
+13      2      4  0.0 0.2689414  0.9737429   FALSE
+14      3      4  1.0 0.5000000  0.4426847    TRUE
+15      4      4  2.0 0.7310586  0.8547356   FALSE
+16      2      4  0.0 0.2689414  0.4023904   FALSE
+17      3      4  1.0 0.5000000  0.7592386   FALSE
+18      4      4  2.0 0.7310586  0.1249635    TRUE
+19      2      5 -0.5 0.1824255  0.2745431   FALSE
+20      3      5  0.5 0.3775407  0.9232862   FALSE
+21      4      5  1.5 0.6224593  0.7555270   FALSE
+22      2      5 -0.5 0.1824255  0.1915469   FALSE
+23      3      5  0.5 0.3775407  0.4516974   FALSE
+24      4      5  1.5 0.6224593  0.4809863    TRUE</code></pre>
+</div>
+</div>
+<p>Turn the above code into a function for use later.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>simulateData <span class="ot">&lt;-</span> <span class="cf">function</span>(true_params, <span class="at">model_id =</span> <span class="st">"one_k_one_beta_linear"</span>) {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generates simulated data for a participant based on the "true" parameters supplied</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  reward <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">times =</span> <span class="dv">8</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  effort <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">each =</span> <span class="dv">3</span>, <span class="at">times =</span> <span class="dv">2</span>) <span class="co"># repeat same 12 trials for each recipient</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  recipient <span class="ot">=</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"food"</span>, <span class="st">"climate"</span>), <span class="at">each =</span> <span class="dv">12</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Define k parameters</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"one_k"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    n_ks <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    k_param_true <span class="ot">=</span> <span class="fu">rep</span>(true_params[<span class="dv">1</span>], <span class="fu">length</span>(recipient))</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"two_k"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    n_ks <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    k_param_true <span class="ot">=</span> (recipient <span class="sc">==</span> <span class="st">"food"</span>) <span class="sc">*</span> true_params[<span class="dv">1</span>] <span class="sc">+</span> (recipient <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">*</span> true_params[<span class="dv">2</span>]</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"k parameters in '"</span>, model_id, <span class="st">"' misspecified"</span>)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Define beta parameters</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"one_beta"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    beta_param_true <span class="ot">=</span> <span class="fu">rep</span>(true_params[<span class="dv">1</span> <span class="sc">+</span> n_ks], <span class="fu">length</span>(recipient))</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"two_beta"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    beta_param_true <span class="ot">=</span> (recipient <span class="sc">==</span> <span class="st">"food"</span>) <span class="sc">*</span> true_params[<span class="dv">1</span> <span class="sc">+</span> n_ks] <span class="sc">+</span> (recipient <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">*</span> true_params[<span class="dv">2</span> <span class="sc">+</span> n_ks]</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"beta parameters in '"</span>, model_id, <span class="st">"' misspecified."</span>)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute subjective value of "work" option</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># (Based on type of model specified by 'model_id')</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"linear"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">-</span> (effort <span class="sc">*</span> k_param_true)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"para"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">-</span> ((effort<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> k_param_true)</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"hyper"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> (effort <span class="sc">*</span> k_param_true))</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"Model ID: '"</span>, model_id, <span class="st">"' is incorrectly specified."</span>)</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate probabilities of choosing work option</span></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># (calculates probability for each row of matrix (i.e., trial) based on SV and baseline values)</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>  prob <span class="ot">=</span> <span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">/</span> (<span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">*</span> beta_param_true))</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>  choices <span class="ot">=</span> prob <span class="sc">&gt;</span> <span class="fu">runif</span>(<span class="fu">length</span>(prob))</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>  data <span class="ot">=</span> <span class="fu">data.frame</span>(choices, reward, effort, recipient)</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>  data<span class="sc">$</span>k_param_true <span class="ot">=</span> k_param_true</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>  data<span class="sc">$</span>beta_param_true <span class="ot">=</span> beta_param_true</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(data)</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="fit-model-using-maximum-likelihood-estimation-mle" class="level2">
+<h2 class="anchored" data-anchor-id="fit-model-using-maximum-likelihood-estimation-mle">Fit model using Maximum Likelihood Estimation (MLE)</h2>
+<p>Using the simulated data above, fit the model using maximum likelihood estimation (MLE).</p>
+<p>Can be used to check if “true” parameters can be recovered by the model.</p>
+<p>Will use the <code>optim</code> function to fit the models.</p>
+<p>First, create a function that <code>optim()</code> will try to minimize.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>fitModel <span class="ot">&lt;-</span> <span class="cf">function</span>(data, params, <span class="at">model_id =</span> <span class="st">"one_k_one_beta_linear"</span>) {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fits parameters to model and calculates softmax and negative log-likelihood</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Get reward, effort, and choices from data</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  reward <span class="ot">=</span> data<span class="sc">$</span>reward</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  effort <span class="ot">=</span> data<span class="sc">$</span>effort</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  choices <span class="ot">=</span> data<span class="sc">$</span>choices</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  recipient <span class="ot">=</span> data<span class="sc">$</span>recipient</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Assign k parameter values</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"one_k"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    n_ks <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    k_param <span class="ot">=</span> <span class="fu">rep</span>(params[<span class="dv">1</span>], <span class="fu">length</span>(recipient))</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"two_k"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    n_ks <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    k_param <span class="ot">=</span> (recipient <span class="sc">==</span> <span class="st">"food"</span>) <span class="sc">*</span> params[<span class="dv">1</span>] <span class="sc">+</span> (recipient <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">*</span> params[<span class="dv">2</span>]</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"k parameters in '"</span>, model_id, <span class="st">"' misspecified."</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Assign beta parameter values</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"one_beta"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    beta_param <span class="ot">=</span> <span class="fu">rep</span>(params[<span class="dv">1</span> <span class="sc">+</span> n_ks], <span class="fu">length</span>(recipient))</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"two_beta"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>    beta_param <span class="ot">=</span> (recipient <span class="sc">==</span> <span class="st">"food"</span>) <span class="sc">*</span> params[<span class="dv">1</span> <span class="sc">+</span> n_ks] <span class="sc">+</span> (recipient <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">*</span> params[<span class="dv">2</span> <span class="sc">+</span> n_ks]</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"beta parameters in '"</span>, model_id, <span class="st">"' misspecified"</span>)</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute subjective value of "work" option</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># (Based on type of model specified by 'model_id')</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"linear"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">-</span> (effort <span class="sc">*</span> k_param)</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"para"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">-</span> ((effort<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> k_param)</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">grepl</span>(<span class="st">"hyper"</span>, model_id, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> (effort <span class="sc">*</span> k_param))</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"Model ID '"</span>, model_id, <span class="st">"' is incorrectly specified."</span>)</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate probabilities of choosing work option</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>  prob <span class="ot">=</span> <span class="fu">exp</span>(SV <span class="sc">*</span> beta_param) <span class="sc">/</span> (<span class="fu">exp</span>(SV <span class="sc">*</span> beta_param) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">*</span> beta_param))</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Probability of choosing "rest" option</span></span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>  prob[<span class="sc">!</span>choices] <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> prob[<span class="sc">!</span>choices]</span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert probabilities to log-likelihoods</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Note: the LogSumExp function can be used to calculate log-likelihoods in a more numerically stable way (&lt;https://en.wikipedia.org/wiki/LogSumExp&gt;)</span></span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>  LL <span class="ot">=</span> <span class="fu">log</span>(prob)</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>  negLL <span class="ot">=</span> <span class="sc">-</span><span class="fu">sum</span>(LL) <span class="co"># sum LL together and flip sign to make values positive (for optim minimizing function)</span></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(negLL)</span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 'Recipient' is used later in this tutorial, so ignore this for now.</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The final version of the simulateData() and fitModel() functions need this specified to work though.</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>recipient <span class="ot">=</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"food"</span>, <span class="st">"climate"</span>), <span class="at">each =</span> <span class="dv">12</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>recipient <span class="ot">=</span> recipient</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then see how well the ‘true’ parameters fit to the simulated data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> <span class="fu">c</span>(k_param_true, beta_param_true);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>negLL <span class="ot">=</span> <span class="fu">fitModel</span>(data, params); <span class="co">#(defined in "Functions" section at end of script)</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">"Minimised log-likelihood: "</span>, negLL);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Minimised log-likelihood: 12.5042838548069"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fitModel</span>(data, <span class="fu">c</span>(k_param_true, beta_param_true))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 12.50428</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fitModel</span>(data, <span class="fu">c</span>(<span class="dv">3</span>, <span class="fl">0.1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 15.83936</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fitModel</span>(data, <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 56.6094</code></pre>
+</div>
+</div>
+<section id="use-optim-to-guess-the-true-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="use-optim-to-guess-the-true-parameters">Use optim() to “guess” the true parameters</h3>
+<p>Functions like optim() can be used to find parameters that minimize the function—i.e., minimize the (negative) log-likelihood. Tries to “guess” which parameter values best explain the data—useful when the ‘true’ parameters are unknown!</p>
+<p>The optim() function allows you to set lower/upper bounds for the parameters it estimates.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set parameter bounds and initial values </span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>) </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>) </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define input function for optim() </span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>inputfun <span class="ot">=</span> <span class="cf">function</span>(params) <span class="fu">fitModel</span>(data, params)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>These give the same result:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fitModel</span>(data, initial_params) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 12.16746</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inputfun</span>(initial_params)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 12.16746</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit model to minimizing function </span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fitted parameters and negative log-likelihood (negLL) </span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">"k_param: "</span>, out<span class="sc">$</span>par[<span class="dv">1</span>], <span class="st">" beta_param: "</span>, out<span class="sc">$</span>par[<span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "k_param: 0.631368589661575 beta_param: 1.81657483405019"</code></pre>
+</div>
+</div>
+<p>Note: The fitted parameters may not exactly match the “true” parameters we set above.</p>
+<p>With so few trials, the randomly simulated data may not perfectly reflect the “true” parameters.</p>
+<p>One solution is to increase the number of simulated trials. Another solution is to simulate a wide range of “true” parameters many times to see how well the model can recover these parameters.</p>
+</section>
+</section>
+<section id="simulate-range-of-parameters-to-check-model-robustness" class="level2">
+<h2 class="anchored" data-anchor-id="simulate-range-of-parameters-to-check-model-robustness">Simulate range of parameters to check model robustness</h2>
+<p>Set a range of known k and beta values and simulate “participants” with these values.</p>
+<section id="simulate-using-a-set-range-of-parameter-values" class="level3">
+<h3 class="anchored" data-anchor-id="simulate-using-a-set-range-of-parameter-values">Simulate using a set range of parameter values</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate range of k and beta values </span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>sim_k_values <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="fl">0.1</span>)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>sim_beta_values <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="fl">0.25</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Create all combinations of these parameters</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>sim_params_allcombo <span class="ot">=</span> <span class="fu">expand.grid</span>(sim_k_values, sim_beta_values)</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Total number of "participants" to simulate, </span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co"># each with unique combination of k and beta "true" values </span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="fu">nrow</span>(sim_params_allcombo)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>fit_params <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each combination of parameters </span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isim <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    true_k <span class="ot">=</span> sim_params_allcombo[isim, <span class="dv">1</span>]</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    true_beta <span class="ot">=</span> sim_params_allcombo[isim, <span class="dv">2</span>]</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate simulated choices based on this combination of parameters</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>    sim_data <span class="ot">=</span> <span class="fu">simulateData</span>(<span class="fu">c</span>(true_k, true_beta))</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the simulated data using MLE</span></span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) {<span class="fu">fitModel</span>(sim_data, params)}</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>    fit_params <span class="ot">=</span> <span class="fu">rbind</span>(fit_params, out<span class="sc">$</span>par)</span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Fitted k parameter vs.&nbsp;“True” k parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_params_allcombo[,<span class="dv">1</span> ], fit_params[, <span class="dv">1</span>], <span class="at">xlab =</span> <span class="st">'"True" k params'</span>, <span class="at">ylab =</span> <span class="st">'Fitted k params'</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Fitted beta parameter vs.&nbsp;“True” beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_params_allcombo[, <span class="dv">2</span>], fit_params[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params'</span>)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="simulate-using-uniform-distribution-of-parameter-values" class="level3">
+<h3 class="anchored" data-anchor-id="simulate-using-uniform-distribution-of-parameter-values">Simulate using uniform distribution of parameter values</h3>
+<p>Rather than using predetermined k and beta values, we can generate a large number of values from a random distribution.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span> <span class="co"># number of "participants" to simulate</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate "true" k and beta values from random distribution</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>sim_k_values <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> ub[<span class="dv">1</span>]; </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>sim_beta_values <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> ub[<span class="dv">2</span>];</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>fit_params <span class="ot">=</span> <span class="fu">c</span>(); <span class="co"># (preallocate array to improve speed)</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each combination of parameters </span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isim <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>    true_k <span class="ot">=</span> sim_k_values[isim]; </span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>    true_beta <span class="ot">=</span> sim_beta_values[isim];</span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate simulated choices based on this combination of parameters</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>    sim_data <span class="ot">=</span> <span class="fu">simulateData</span>(<span class="fu">c</span>(true_k, true_beta));</span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the simulated data using MLE</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) <span class="fu">fitModel</span>(sim_data, params)</span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper  =</span> ub)</span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>    fit_params <span class="ot">=</span> <span class="fu">rbind</span>(fit_params, out<span class="sc">$</span>par)  </span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Fitted k parameter vs.&nbsp;“True” k parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_k_values, fit_params[, <span class="dv">1</span>], <span class="at">xlab =</span> <span class="st">"'True' k params"</span>, <span class="at">ylab =</span> <span class="st">"Fitted k params"</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Fitted beta parameter vs.&nbsp;“True” beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_beta_values, fit_params[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params'</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Note: Sometimes the fitted parameters are at the bounds we set.</p>
+<p>There can be various reasons for this, e.g.,</p>
+<ul>
+<li>Bounds that are too small/too large (bounds may be set based on theory, or sometimes to improve mathematical stability)</li>
+<li>Data are noisy/not enough data</li>
+<li>Model doesn’t accurately reflect how data were generated</li>
+</ul>
+<p>There are several ways to address this, e.g.,</p>
+<ul>
+<li>Reduce noise in data (e.g., collect more trials/participants)</li>
+<li>Use hierarchical fitting</li>
+<li>Try different bounds</li>
+<li>Try a different model</li>
+</ul>
+</section>
+<section id="example-with-higher-number-of-trials-for-each-participant" class="level3">
+<h3 class="anchored" data-anchor-id="example-with-higher-number-of-trials-for-each-participant">Example with higher number of trials for each participant</h3>
+<p>This code is the same as the examples above, but with 50x more trials for each simulated participant. Increasing number of trials can help make data/modelling more robust.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span> <span class="co">#number of "participants" to simulate</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate "true" k and beta values from random distribution </span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>sim_k_values <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> ub[<span class="dv">1</span>]</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>sim_beta_values <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> ub[<span class="dv">2</span>]</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>fit_params <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each combination of parameters</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isim <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    k_param_true <span class="ot">=</span> sim_k_values[isim] </span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>    beta_param_true <span class="ot">=</span> sim_beta_values[isim]</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate simulated choices based on this combination of parameters   </span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>    reward <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">times =</span> <span class="dv">8</span><span class="sc">*</span><span class="dv">50</span>)</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>    effort <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">each =</span> <span class="dv">3</span>, <span class="at">times =</span> <span class="dv">2</span><span class="sc">*</span><span class="dv">50</span>) <span class="co"># repeat same 12 trials for each recipient</span></span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>    recipient <span class="ot">=</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"food"</span>, <span class="st">"climate"</span>), <span class="at">each =</span> <span class="dv">12</span>, <span class="at">times =</span> <span class="dv">50</span>)</span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute subjective value of "work" option</span></span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>    SV <span class="ot">=</span> reward <span class="sc">-</span> (effort <span class="sc">*</span> k_param_true);</span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate probabilities of choosing work option</span></span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>    prob <span class="ot">=</span> <span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">/</span> (<span class="fu">exp</span>(SV <span class="sc">*</span> beta_param_true) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">*</span> beta_param_true))</span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>    choices <span class="ot">=</span> prob <span class="sc">&gt;</span> <span class="fu">runif</span>(<span class="fu">length</span>(prob))</span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>    sim_data <span class="ot">=</span> <span class="fu">data.frame</span>(choices, reward, effort, recipient, <span class="at">k_param_true =</span> <span class="fu">rep</span>(k_param_true, <span class="fu">length</span>(choices)), <span class="at">beta_param_true =</span> <span class="fu">rep</span>(beta_param_true, <span class="fu">length</span>(choices)))</span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the simulated data using MLE</span></span>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) <span class="fu">fitModel</span>(sim_data, params)</span>
+<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb37-31"><a href="#cb37-31" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb37-32"><a href="#cb37-32" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-33"><a href="#cb37-33" aria-hidden="true" tabindex="-1"></a>    fit_params <span class="ot">=</span> <span class="fu">rbind</span>(fit_params, out<span class="sc">$</span>par)</span>
+<span id="cb37-34"><a href="#cb37-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_k_values, fit_params[, <span class="dv">1</span>], <span class="at">xlab =</span> <span class="st">'"True" k params'</span>, <span class="at">ylab =</span> <span class="st">'Fitted k params'</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sim_beta_values, fit_params[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params'</span>)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="fitting-different-types-of-models" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-different-types-of-models">Fitting different types of models</h2>
+<p>Simulate data using a parabolic model. Will use this data to fit different types of models (linear, parabolic, hyperbolic) to see which type of model best describes the data (i.e., the one that best minimises the log-likelihood).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>sim_data_para <span class="ot">=</span> <span class="fu">vector</span>(<span class="st">"list"</span>, nsims)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>true_k_params <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>true_beta_params <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> <span class="dv">3</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>    sim_data_para[[i]] <span class="ot">=</span> <span class="fu">simulateData</span>(<span class="fu">c</span>(true_k_params[i], true_beta_params[i]), <span class="st">'one_k_one_beta_para'</span>)</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="fit-a-linear-model" class="level3">
+<h3 class="anchored" data-anchor-id="fit-a-linear-model">Fit a linear model</h3>
+<p><span class="math inline">\(SV = R - (E*k)\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>fit_linear <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>negLL_linear <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="ot">=</span> <span class="st">"one_k_one_beta_linear"</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>) </span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    subj_data <span class="ot">=</span> sim_data_para[[isubj]]</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the data using MLE</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) { <span class="fu">fitModel</span>(subj_data, params, model_id) }</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>    fit_linear <span class="ot">=</span> <span class="fu">rbind</span>(fit_linear, out<span class="sc">$</span>par)</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>    negLL_linear <span class="ot">=</span> <span class="fu">c</span>(negLL_linear, out<span class="sc">$</span>value)</span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Minimised log-likelihood: '</span>, <span class="fu">sum</span>(negLL_linear));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Minimised log-likelihood: 1964.58356260803"</code></pre>
+</div>
+</div>
+<p>Fitted k parameter vs.&nbsp;“True” k parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_k_params, fit_linear[, <span class="dv">1</span>], <span class="at">xlab =</span> <span class="st">'"True" k params (parabolic)'</span>, <span class="at">ylab =</span> <span class="st">'Fitted k params (linear)'</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Fitted beta parameter vs.&nbsp;“True” beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_beta_params, fit_linear[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params (parabolic)'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params (linear)'</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="fit-a-parabolic-model" class="level3">
+<h3 class="anchored" data-anchor-id="fit-a-parabolic-model">Fit a parabolic model</h3>
+<p><span class="math inline">\(SV = R - (E^2*k)\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>fit_para <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>negLL_para <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="ot">=</span> <span class="st">'one_k_one_beta_para'</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>    subj_data <span class="ot">=</span> sim_data_para[[isubj]]</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the data using MLE</span></span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) { <span class="fu">fitModel</span>(subj_data, params, model_id) }</span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>    fit_para <span class="ot">=</span> <span class="fu">rbind</span>(fit_para, out<span class="sc">$</span>par)</span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a>    negLL_para <span class="ot">=</span> <span class="fu">c</span>(negLL_para, out<span class="sc">$</span>value)</span>
+<span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Minimised log-likelihood: '</span>, <span class="fu">sum</span>(negLL_para));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Minimised log-likelihood: 1788.11727805301"</code></pre>
+</div>
+</div>
+<p>Fitted k parameter vs.&nbsp;“True” k parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_k_params, fit_para[, <span class="dv">1</span>], <span class="at">xlab =</span> (<span class="st">'"True" k params (parabolic)'</span>), <span class="at">ylab =</span> (<span class="st">'Fitted k params (parabolic)'</span>))</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="things-to-think-about" class="level3">
+<h3 class="anchored" data-anchor-id="things-to-think-about">Things to think about</h3>
+<p>Why are ‘k’ values above 1 not recovered well here?</p>
+<p>What happens to SV and the softmax output at higher values of k?</p>
+<p>How would this affect the output of simulateData()?</p>
+<p>[Optional] Try simulating data with a max “true” k of 1. How does this affect the models ability to recover the parameter?</p>
+<p>Fitted beta parameter vs.&nbsp;“True” beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_beta_params, fit_para[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params (parabolic)'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params (parabolic)'</span>)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="fit-a-hyperbolic-model" class="level3">
+<h3 class="anchored" data-anchor-id="fit-a-hyperbolic-model">Fit a hyperbolic model</h3>
+<p><span class="math inline">\(\frac{R}{1 + (E*k)}\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>fit_hyper <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>negLL_hyper <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>model_id <span class="ot">=</span> <span class="st">'one_k_one_beta_hyper'</span></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>    subj_data <span class="ot">=</span> sim_data_para[[isubj]]</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the data using MLE</span></span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) { <span class="fu">fitModel</span>(subj_data, params, model_id) }</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">2</span>)</span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params,inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>    fit_hyper <span class="ot">=</span> <span class="fu">rbind</span>(fit_hyper, out<span class="sc">$</span>par)</span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>    negLL_hyper <span class="ot">=</span> <span class="fu">c</span>(negLL_hyper, out<span class="sc">$</span>value)</span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Minimised log-likelihood: '</span>, <span class="fu">sum</span>(negLL_hyper));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Minimised log-likelihood: 2640.75075215359"</code></pre>
+</div>
+</div>
+<p>Fitted k parameter vs.&nbsp;“True” k parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_k_params, fit_hyper[, <span class="dv">1</span>], <span class="at">xlab =</span> <span class="st">'"True" k params (parabolic)'</span>, <span class="at">ylab =</span> <span class="st">'Fitted k params (hyperbolic)'</span>)</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Fitted beta parameter vs.&nbsp;“True” beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_beta_params, fit_hyper[, <span class="dv">2</span>], <span class="at">xlab =</span> <span class="st">'"True" beta params (parabolic)'</span>, <span class="at">ylab =</span> <span class="st">'Fitted beta params (hyperbolic)'</span>)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="calculate-aicbic-to-compare-models" class="level2">
+<h2 class="anchored" data-anchor-id="calculate-aicbic-to-compare-models">Calculate AIC/BIC to compare models</h2>
+<section id="compare-log-likelihoods" class="level3">
+<h3 class="anchored" data-anchor-id="compare-log-likelihoods">Compare Log-Likelihoods</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(negLL_linear)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1964.584</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(negLL_para)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1788.117</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(negLL_hyper)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2640.751</code></pre>
+</div>
+</div>
+</section>
+<section id="calculate-aic" class="level3">
+<h3 class="anchored" data-anchor-id="calculate-aic">Calculate AIC</h3>
+<p><span class="math inline">\(AIC = -2*LL + 2*numParam\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>numParam <span class="ot">=</span> <span class="dv">2</span> <span class="co">#% 1 k, 1 beta parameter</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>aic_linear <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_linear) <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> numParam;</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>aic_para <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_para) <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> numParam; </span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>aic_hyper <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_hyper) <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> numParam; </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Note: the negLL parameter is actually the log-likelihood with its sign flipped to make it positive (to help the optim function minimise the LL). Here we flip the sign back to get the actual log-likelihood (which confusingly, is a negative number).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(aic_linear)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5929.167</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(aic_para)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5576.235</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(aic_hyper)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 7281.502</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">c</span>(<span class="fu">sum</span>(aic_linear), <span class="fu">sum</span>(aic_para), <span class="fu">sum</span>(aic_hyper)), <span class="at">names.arg =</span> <span class="fu">c</span>(<span class="st">"Linear"</span>, <span class="st">"Parabolic"</span>, <span class="st">"Hyperbolic"</span>), <span class="at">xlab =</span> <span class="st">'Fitted model'</span>, <span class="at">ylab =</span> <span class="st">'AIC'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="calculate-bic" class="level3">
+<h3 class="anchored" data-anchor-id="calculate-bic">Calculate BIC</h3>
+<p><span class="math inline">\(BIC = -2*LL + log(numObs)*numParam\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>numParam <span class="ot">=</span> <span class="dv">2</span> <span class="co"># 1 k, 1 beta parameter </span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>numObs <span class="ot">=</span> <span class="fu">nrow</span>(subj_data) <span class="co"># 24, number of observations (trials) for each participant</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>bic_linear <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_linear) <span class="sc">+</span> <span class="fu">log</span>(numObs) <span class="sc">*</span> numParam; </span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>bic_para <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_para) <span class="sc">+</span> <span class="fu">log</span>(numObs) <span class="sc">*</span> numParam;</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>bic_hyper <span class="ot">=</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_hyper) <span class="sc">+</span> <span class="fu">log</span>(numObs) <span class="sc">*</span> numParam;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(bic_linear)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 7107.221</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(bic_para)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 6754.288</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(bic_hyper)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8459.555</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">c</span>(<span class="fu">sum</span>(bic_linear), <span class="fu">sum</span>(bic_para), <span class="fu">sum</span>(bic_hyper)), <span class="at">names.arg =</span> <span class="fu">c</span>(<span class="st">"Linear"</span>, <span class="st">"Parabolic"</span>, <span class="st">"Hyperbolic"</span>), <span class="at">xlab =</span> <span class="st">'Fitted model'</span>, <span class="at">ylab =</span> <span class="st">'BIC'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="fitting-multiple-k-and-beta-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-multiple-k-and-beta-parameters">Fitting multiple k and beta parameters</h3>
+<p>In this example dataset, participants earn rewards for a “climate” option or a “food” option.</p>
+<ol type="1">
+<li>We can assume that they discount effort the same for both options.</li>
+<li>Or we can assume they discount effort differently, depending on which options the rewards go to.</li>
+</ol>
+<p>Let’s simulate some data assuming #1, and compare models that test #1 vs.&nbsp;#2</p>
+<p>Simulate data based on 1 k and 1 beta parameter</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">100</span></span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>data_one_k_one_b_lin <span class="ot">=</span> <span class="fu">vector</span>(<span class="st">"list"</span>, nsims)</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>true_k_params <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>true_beta_params <span class="ot">=</span> <span class="fu">runif</span>(nsims) <span class="sc">*</span> <span class="dv">3</span></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>    data_one_k_one_b_lin[[isubj]] <span class="ot">=</span> <span class="fu">simulateData</span>(<span class="fu">c</span>(true_k_params[isubj], true_beta_params[isubj]), <span class="st">"one_k_one_beta_linear"</span>)</span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Fit the data to a model assuming 1 k and 1 beta</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>model_id <span class="ot">=</span> <span class="st">"one_k_one_beta_linear"</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>nparams <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>fit_smallmodel <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>negLL_smallmodel <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a>    subj_data <span class="ot">=</span> data_one_k_one_b_lin[[isubj]]</span>
+<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the data using MLE</span></span>
+<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) { <span class="fu">fitModel</span>(subj_data, params, model_id) }</span>
+<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(nparams)</span>
+<span id="cb79-15"><a href="#cb79-15" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb79-16"><a href="#cb79-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb79-17"><a href="#cb79-17" aria-hidden="true" tabindex="-1"></a>    fit_smallmodel <span class="ot">=</span> <span class="fu">rbind</span>(fit_smallmodel, out<span class="sc">$</span>par)</span>
+<span id="cb79-18"><a href="#cb79-18" aria-hidden="true" tabindex="-1"></a>    negLL_smallmodel <span class="ot">=</span> <span class="fu">c</span>(negLL_smallmodel, out<span class="sc">$</span>value)</span>
+<span id="cb79-19"><a href="#cb79-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>sumnegLL_smallmodel <span class="ot">=</span> <span class="fu">sum</span>(negLL_smallmodel)</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>aic_smallmodel <span class="ot">=</span> <span class="fu">sum</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_smallmodel) <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> nparams)</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>bic_smallmodel <span class="ot">=</span> <span class="fu">sum</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_smallmodel) <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">nrow</span>(subj_data)) <span class="sc">*</span> nparams)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Fit the data to a model assuming 2 k and 2</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>model_id <span class="ot">=</span> <span class="st">"two_k_two_beta_linear"</span> </span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>lb <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>ub <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">5</span>)</span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>nparams <span class="ot">=</span> <span class="dv">4</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a>fit_largemodel <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>negLL_largemodel <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (isubj <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nsims) {</span>
+<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a>    subj_data <span class="ot">=</span> data_one_k_one_b_lin[[isubj]]</span>
+<span id="cb81-11"><a href="#cb81-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-12"><a href="#cb81-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fit the data using MLE</span></span>
+<span id="cb81-13"><a href="#cb81-13" aria-hidden="true" tabindex="-1"></a>    inputfun <span class="ot">=</span> <span class="cf">function</span>(params) { <span class="fu">fitModel</span>(subj_data, params, model_id) }</span>
+<span id="cb81-14"><a href="#cb81-14" aria-hidden="true" tabindex="-1"></a>    initial_params <span class="ot">=</span> <span class="fu">runif</span>(nparams)</span>
+<span id="cb81-15"><a href="#cb81-15" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">optim</span>(initial_params, inputfun, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>, <span class="at">lower =</span> lb, <span class="at">upper =</span> ub)</span>
+<span id="cb81-16"><a href="#cb81-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-17"><a href="#cb81-17" aria-hidden="true" tabindex="-1"></a>    fit_largemodel <span class="ot">=</span> <span class="fu">rbind</span>(fit_largemodel, out<span class="sc">$</span>par)</span>
+<span id="cb81-18"><a href="#cb81-18" aria-hidden="true" tabindex="-1"></a>    negLL_largemodel <span class="ot">=</span> <span class="fu">c</span>(negLL_largemodel, out<span class="sc">$</span>value)</span>
+<span id="cb81-19"><a href="#cb81-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>sumnegLL_largemodel <span class="ot">=</span> <span class="fu">sum</span>(negLL_largemodel)</span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>aic_largemodel <span class="ot">=</span> <span class="fu">sum</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_largemodel) <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> nparams)</span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>bic_largemodel <span class="ot">=</span> <span class="fu">sum</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> (<span class="sc">-</span>negLL_largemodel) <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">nrow</span>(subj_data)) <span class="sc">*</span> nparams)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Compare negLL, AIC, and BIC between models</p>
+<p>negLL</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>sumnegLL_smallmodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 661.4852</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>sumnegLL_largemodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 563.3351</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">c</span>(<span class="fu">sum</span>(negLL_smallmodel), <span class="fu">sum</span>(negLL_largemodel)), <span class="at">names.arg =</span> <span class="fu">c</span>(<span class="st">"Small model"</span>, <span class="st">"Large model"</span>), <span class="at">ylab =</span> <span class="st">"Negative log-likelihood (lower is better)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-52-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>AIC</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a>aic_smallmodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1722.97</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>aic_largemodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1926.67</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">c</span>(aic_smallmodel, aic_largemodel), <span class="at">names.arg =</span> <span class="fu">c</span>(<span class="st">"Small model"</span>, <span class="st">"Large model"</span>), <span class="at">ylab =</span> <span class="st">"AIC (lower is better)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-54-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>BIC</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>bic_smallmodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1958.581</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>bic_largemodel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2397.892</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">c</span>(bic_smallmodel, bic_largemodel), <span class="at">names.arg =</span> <span class="fu">c</span>(<span class="st">"Small model"</span>, <span class="st">"Large model"</span>), <span class="at">ylab =</span> <span class="st">"BIC (lower is better)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Effort_discounting_tutorial_R_files/figure-html/unnamed-chunk-56-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

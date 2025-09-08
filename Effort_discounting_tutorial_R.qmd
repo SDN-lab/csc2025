@@ -1,0 +1,764 @@
+---
+title: "Simulating and Fitting Effort Discounting Models"
+format: html
+toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This file is adapted from the original Matlab file used for the intro tutorial at the CSC 2025 summer school. For more details please see the original Matlab .mlx file.
+
+More information: Wilson & Collins, 2019, *eLife* is an excellent resource for doing computational modelling.
+
+Desmos graphing calculator is useful when developing models: <https://www.desmos.com/calculator>
+
+Effort discounting online app: <https://sdn-lab.github.io/csc_app/>
+
+My email: [t.vogel\@bham.ac.uk](mailto:t.vogel@bham.ac.uk){.email}
+
+```{r}
+set.seed(03092025) # set randomizer seed
+source("simulateData.R")
+source("fitModel.R")
+```
+
+## Define and simulate model
+
+### Set up data to match pro-environmental effort experiment
+
+$SV = R - (E*k)$
+
+```{r}
+reward = rep(2:4, times = 8)
+effort = rep(2:5, each = 6)
+
+data = data.frame(reward, effort)
+print(data)
+```
+
+### Simulate choices using known discount (k) and beta parameters
+
+```{r}
+# Fix parameters for simulating data 
+k_param_true = 0.5
+beta_param_true = 1
+
+# Define model formula 
+SV = reward - (effort * k_param_true)
+```
+
+$SV=reward-(effort*0.5)$
+
+```{r}
+data$SV = SV
+```
+
+### Calculate softmax
+
+```{r}
+# (Predicted probabilities of choosing "work" option) 
+prob = exp(SV * beta_param_true) / (exp(SV * beta_param_true) + exp(1 * beta_param_true))
+```
+
+$\sigma(x_i) = \frac{exp(x_i)}{\sum^n_{j=1} exp(x_j)}$
+
+$Pr(work) = \frac{exp(SV_{work}*\beta)}{exp(SV_{work}*\beta)+exp(1*\beta)}$
+
+### Simulate choices from probabilities
+
+First generate a list of random numbers (0-1).
+
+```{r}
+random_nums = runif(length(prob))
+```
+
+Use them to 'simulate' choices.
+
+```{r}
+choices = prob > random_nums
+```
+
+```{r}
+data$prob = prob
+data$random_num = random_nums
+data$choices = choices
+print(data)
+```
+
+Turn the above code into a function for use later.
+
+```{{r}}
+simulateData <- function(true_params, model_id = "one_k_one_beta_linear") {
+  # Generates simulated data for a participant based on the "true" parameters supplied
+  reward = rep(2:4, times = 8)
+  effort = rep(2:5, each = 3, times = 2) # repeat same 12 trials for each recipient
+  recipient = rep(c("food", "climate"), each = 12)
+
+  # Define k parameters
+  if (grepl("one_k", model_id, fixed = TRUE)) {
+    n_ks = 1
+    k_param_true = rep(true_params[1], length(recipient))
+  } else if (grepl("two_k", model_id, fixed = TRUE)) {
+    n_ks = 2
+    k_param_true = (recipient == "food") * true_params[1] + (recipient == "climate") * true_params[2]
+  } else {
+    stop("k parameters in '", model_id, "' misspecified")
+  }
+
+  # Define beta parameters
+  if (grepl("one_beta", model_id, fixed = TRUE)) {
+    beta_param_true = rep(true_params[1 + n_ks], length(recipient))
+  } else if (grepl("two_beta", model_id, fixed = TRUE)) {
+    beta_param_true = (recipient == "food") * true_params[1 + n_ks] + (recipient == "climate") * true_params[2 + n_ks]
+  } else {
+    stop("beta parameters in '", model_id, "' misspecified.")
+  }
+
+  # Compute subjective value of "work" option
+  # (Based on type of model specified by 'model_id')
+  if (grepl("linear", model_id, fixed = TRUE)) {
+    SV = reward - (effort * k_param_true)
+  } else if (grepl("para", model_id, fixed = TRUE)) {
+    SV = reward - ((effort^2) * k_param_true)
+  } else if (grepl("hyper", model_id, fixed = TRUE)) {
+    SV = reward / (1 + (effort * k_param_true))
+  } else {
+    stop("Model ID: '", model_id, "' is incorrectly specified.")
+  }
+
+  # Calculate probabilities of choosing work option
+  # (calculates probability for each row of matrix (i.e., trial) based on SV and baseline values)
+  prob = exp(SV * beta_param_true) / (exp(SV * beta_param_true) + exp(1 * beta_param_true))
+
+  choices = prob > runif(length(prob))
+
+  data = data.frame(choices, reward, effort, recipient)
+  data$k_param_true = k_param_true
+  data$beta_param_true = beta_param_true
+
+  return(data)
+}
+```
+
+## Fit model using Maximum Likelihood Estimation (MLE)
+
+Using the simulated data above, fit the model using maximum likelihood estimation (MLE).
+
+Can be used to check if "true" parameters can be recovered by the model.
+
+Will use the `optim` function to fit the models.
+
+First, create a function that `optim()` will try to minimize.
+
+```{{r}}
+fitModel <- function(data, params, model_id = "one_k_one_beta_linear") {
+  # Fits parameters to model and calculates softmax and negative log-likelihood
+
+  # Get reward, effort, and choices from data
+  reward = data$reward
+  effort = data$effort
+  choices = data$choices
+  recipient = data$recipient
+
+  # Assign k parameter values
+  if (grepl("one_k", model_id, fixed = TRUE)) {
+    n_ks = 1
+    k_param = rep(params[1], length(recipient))
+  } else if (grepl("two_k", model_id, fixed = TRUE)) {
+    n_ks = 2
+    k_param = (recipient == "food") * params[1] + (recipient == "climate") * params[2]
+  } else {
+    stop("k parameters in '", model_id, "' misspecified.")
+  }
+
+  # Assign beta parameter values
+  if (grepl("one_beta", model_id, fixed = TRUE)) {
+    beta_param = rep(params[1 + n_ks], length(recipient))
+  } else if (grepl("two_beta", model_id, fixed = TRUE)) {
+    beta_param = (recipient == "food") * params[1 + n_ks] + (recipient == "climate") * params[2 + n_ks]
+  } else {
+    stop("beta parameters in '", model_id, "' misspecified")
+  }
+
+  # Compute subjective value of "work" option
+  # (Based on type of model specified by 'model_id')
+  if (grepl("linear", model_id, fixed = TRUE)) {
+    SV = reward - (effort * k_param)
+  } else if (grepl("para", model_id, fixed = TRUE)) {
+    SV = reward - ((effort^2) * k_param)
+  } else if (grepl("hyper", model_id, fixed = TRUE)) {
+    SV = reward / (1 + (effort * k_param))
+  } else {
+    stop("Model ID '", model_id, "' is incorrectly specified.")
+  }
+
+  # Calculate probabilities of choosing work option
+  prob = exp(SV * beta_param) / (exp(SV * beta_param) + exp(1 * beta_param))
+
+  # Probability of choosing "rest" option
+  prob[!choices] = 1 - prob[!choices]
+
+  # Convert probabilities to log-likelihoods
+  # Note: the LogSumExp function can be used to calculate log-likelihoods in a more numerically stable way (<https://en.wikipedia.org/wiki/LogSumExp>)
+  LL = log(prob)
+  negLL = -sum(LL) # sum LL together and flip sign to make values positive (for optim minimizing function)
+
+  return(negLL)
+}
+```
+
+```{r}
+# 'Recipient' is used later in this tutorial, so ignore this for now.
+# The final version of the simulateData() and fitModel() functions need this specified to work though.
+recipient = rep(c("food", "climate"), each = 12)
+data$recipient = recipient
+```
+
+Then see how well the 'true' parameters fit to the simulated data.
+
+```{r}
+params = c(k_param_true, beta_param_true);
+
+negLL = fitModel(data, params); #(defined in "Functions" section at end of script)
+paste0("Minimised log-likelihood: ", negLL);
+```
+
+```{r}
+fitModel(data, c(k_param_true, beta_param_true))
+fitModel(data, c(3, 0.1))
+fitModel(data, c(1.5, 2.5))
+```
+
+### Use optim() to "guess" the true parameters
+
+Functions like optim() can be used to find parameters that minimize the function—i.e., minimize the (negative) log-likelihood. Tries to "guess" which parameter values best explain the data—useful when the 'true' parameters are unknown!
+
+The optim() function allows you to set lower/upper bounds for the parameters it estimates.
+
+```{r}
+# Set parameter bounds and initial values 
+lb = c(0, 0) 
+ub = c(2, 5) 
+
+initial_params = runif(2)
+```
+
+```{r}
+# Define input function for optim() 
+inputfun = function(params) fitModel(data, params)
+```
+
+These give the same result:
+
+```{r}
+fitModel(data, initial_params) 
+inputfun(initial_params)
+```
+
+```{r}
+# Fit model to minimizing function 
+out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+```
+
+```{r}
+# Fitted parameters and negative log-likelihood (negLL) 
+paste0("k_param: ", out$par[1], " beta_param: ", out$par[2])
+```
+
+Note: The fitted parameters may not exactly match the "true" parameters we set above.
+
+With so few trials, the randomly simulated data may not perfectly reflect the "true" parameters.
+
+One solution is to increase the number of simulated trials. Another solution is to simulate a wide range of "true" parameters many times to see how well the model can recover these parameters.
+
+## Simulate range of parameters to check model robustness
+
+Set a range of known k and beta values and simulate "participants" with these values.
+
+### Simulate using a set range of parameter values
+
+```{r}
+# Generate range of k and beta values 
+sim_k_values = seq(0, 2, 0.1)
+sim_beta_values = seq(0, 5, 0.25)
+
+# Create all combinations of these parameters
+sim_params_allcombo = expand.grid(sim_k_values, sim_beta_values)
+
+# Total number of "participants" to simulate, 
+# each with unique combination of k and beta "true" values 
+nsims = nrow(sim_params_allcombo)
+
+fit_params = c()
+
+# Loop through each combination of parameters 
+for (isim in 1:nsims) {
+    true_k = sim_params_allcombo[isim, 1]
+    true_beta = sim_params_allcombo[isim, 2]
+
+    # Generate simulated choices based on this combination of parameters
+    sim_data = simulateData(c(true_k, true_beta))
+
+    # Fit the simulated data using MLE
+    inputfun = function(params) {fitModel(sim_data, params)}
+    initial_params = runif(2)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_params = rbind(fit_params, out$par)
+}
+
+```
+
+Fitted k parameter vs. "True" k parameter
+
+```{r}
+plot(sim_params_allcombo[,1 ], fit_params[, 1], xlab = '"True" k params', ylab = 'Fitted k params')
+abline(0, 1)
+```
+
+Fitted beta parameter vs. "True" beta parameter
+
+```{r}
+plot(sim_params_allcombo[, 2], fit_params[, 2], xlab = '"True" beta params', ylab = 'Fitted beta params')
+abline(0, 1)
+```
+
+### Simulate using uniform distribution of parameter values
+
+Rather than using predetermined k and beta values, we can generate a large number of values from a random distribution.
+
+```{r}
+nsims = 500 # number of "participants" to simulate
+
+# Generate "true" k and beta values from random distribution
+sim_k_values = runif(nsims) * ub[1]; 
+sim_beta_values = runif(nsims) * ub[2];
+
+fit_params = c(); # (preallocate array to improve speed)
+
+# Loop through each combination of parameters 
+for (isim in 1:nsims) {
+    true_k = sim_k_values[isim]; 
+    true_beta = sim_beta_values[isim];
+
+    # Generate simulated choices based on this combination of parameters
+    sim_data = simulateData(c(true_k, true_beta));
+
+    # Fit the simulated data using MLE
+    inputfun = function(params) fitModel(sim_data, params)
+    initial_params = runif(2)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper  = ub)
+    fit_params = rbind(fit_params, out$par)  
+}
+```
+
+Fitted k parameter vs. "True" k parameter
+
+```{r}
+plot(sim_k_values, fit_params[, 1], xlab = "'True' k params", ylab = "Fitted k params")
+abline(0, 1)
+```
+
+Fitted beta parameter vs. "True" beta parameter
+
+```{r}
+plot(sim_beta_values, fit_params[, 2], xlab = '"True" beta params', ylab = 'Fitted beta params')
+abline(0, 1)
+```
+
+Note: Sometimes the fitted parameters are at the bounds we set.
+
+There can be various reasons for this, e.g.,
+
+-   Bounds that are too small/too large (bounds may be set based on theory, or sometimes to improve mathematical stability)
+-   Data are noisy/not enough data
+-   Model doesn't accurately reflect how data were generated
+
+There are several ways to address this, e.g.,
+
+-   Reduce noise in data (e.g., collect more trials/participants)
+-   Use hierarchical fitting
+-   Try different bounds
+-   Try a different model
+
+### Example with higher number of trials for each participant
+
+This code is the same as the examples above, but with 50x more trials for each simulated participant. Increasing number of trials can help make data/modelling more robust.
+
+```{r}
+nsims = 500 #number of "participants" to simulate
+
+# Generate "true" k and beta values from random distribution 
+sim_k_values = runif(nsims) * ub[1]
+sim_beta_values = runif(nsims) * ub[2]
+
+fit_params = c()
+
+# Loop through each combination of parameters
+for (isim in 1:nsims) {
+    k_param_true = sim_k_values[isim] 
+    beta_param_true = sim_beta_values[isim]
+
+    # Generate simulated choices based on this combination of parameters   
+    reward = rep(2:4, times = 8*50)
+    effort = rep(2:5, each = 3, times = 2*50) # repeat same 12 trials for each recipient
+    recipient = rep(c("food", "climate"), each = 12, times = 50)
+
+    # Compute subjective value of "work" option
+    SV = reward - (effort * k_param_true);
+
+    # Calculate probabilities of choosing work option
+    prob = exp(SV * beta_param_true) / (exp(SV * beta_param_true) + exp(1 * beta_param_true))
+
+    choices = prob > runif(length(prob))
+    sim_data = data.frame(choices, reward, effort, recipient, k_param_true = rep(k_param_true, length(choices)), beta_param_true = rep(beta_param_true, length(choices)))
+
+    # Fit the simulated data using MLE
+    inputfun = function(params) fitModel(sim_data, params)
+    initial_params = runif(2)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_params = rbind(fit_params, out$par)
+}
+```
+
+```{r}
+plot(sim_k_values, fit_params[, 1], xlab = '"True" k params', ylab = 'Fitted k params')
+abline(0, 1)
+```
+
+```{r}
+plot(sim_beta_values, fit_params[, 2], xlab = '"True" beta params', ylab = 'Fitted beta params')
+abline(0, 1)
+```
+
+## Fitting different types of models
+
+Simulate data using a parabolic model. Will use this data to fit different types of models (linear, parabolic, hyperbolic) to see which type of model best describes the data (i.e., the one that best minimises the log-likelihood).
+
+```{r}
+nsims = 500
+sim_data_para = vector("list", nsims)
+
+true_k_params = runif(nsims) * 2
+true_beta_params = runif(nsims) * 3
+
+for (i in 1:nsims) {
+    sim_data_para[[i]] = simulateData(c(true_k_params[i], true_beta_params[i]), 'one_k_one_beta_para')
+}
+```
+
+### Fit a linear model
+
+$SV = R - (E*k)$
+
+```{r}
+fit_linear = c()
+negLL_linear = c()
+
+model_id = "one_k_one_beta_linear"
+lb = c(0, 0) 
+ub = c(2, 5)
+
+for (isubj in 1:nsims) {
+    subj_data = sim_data_para[[isubj]]
+
+    # Fit the data using MLE
+    inputfun = function(params) { fitModel(subj_data, params, model_id) }
+    initial_params = runif(2)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_linear = rbind(fit_linear, out$par)
+    negLL_linear = c(negLL_linear, out$value)
+}
+```
+
+```{r}
+paste0('Minimised log-likelihood: ', sum(negLL_linear));
+```
+
+Fitted k parameter vs. "True" k parameter
+
+```{r}
+plot(true_k_params, fit_linear[, 1], xlab = '"True" k params (parabolic)', ylab = 'Fitted k params (linear)')
+abline(0, 1)
+```
+
+Fitted beta parameter vs. "True" beta parameter
+
+```{r}
+plot(true_beta_params, fit_linear[, 2], xlab = '"True" beta params (parabolic)', ylab = 'Fitted beta params (linear)')
+abline(0, 1)
+```
+
+### Fit a parabolic model
+
+$SV = R - (E^2*k)$
+
+```{r}
+fit_para = c()
+negLL_para = c()
+
+model_id = 'one_k_one_beta_para'
+lb = c(0, 0)
+ub = c(2, 5)
+
+for (isubj in 1:nsims) {
+    subj_data = sim_data_para[[isubj]]
+
+    # Fit the data using MLE
+    inputfun = function(params) { fitModel(subj_data, params, model_id) }
+    initial_params = runif(2)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_para = rbind(fit_para, out$par)
+    negLL_para = c(negLL_para, out$value)
+}
+```
+
+```{r}
+paste0('Minimised log-likelihood: ', sum(negLL_para));
+```
+
+Fitted k parameter vs. "True" k parameter
+
+```{r}
+plot(true_k_params, fit_para[, 1], xlab = ('"True" k params (parabolic)'), ylab = ('Fitted k params (parabolic)'))
+abline(0, 1)
+```
+
+### Things to think about
+
+Why are 'k' values above 1 not recovered well here?
+
+What happens to SV and the softmax output at higher values of k?
+
+How would this affect the output of simulateData()?
+
+\[Optional\] Try simulating data with a max "true" k of 1. How does this affect the models ability to recover the parameter?
+
+Fitted beta parameter vs. "True" beta parameter
+
+```{r}
+plot(true_beta_params, fit_para[, 2], xlab = '"True" beta params (parabolic)', ylab = 'Fitted beta params (parabolic)')
+abline(0, 1)
+```
+
+### Fit a hyperbolic model
+
+$\frac{R}{1 + (E*k)}$
+
+```{r}
+fit_hyper = c()
+negLL_hyper = c()
+
+model_id = 'one_k_one_beta_hyper'
+lb = c(0, 0)
+ub = c(2, 5)
+
+for (isubj in 1:nsims) {
+
+    subj_data = sim_data_para[[isubj]]
+
+    # Fit the data using MLE
+    inputfun = function(params) { fitModel(subj_data, params, model_id) }
+    initial_params = runif(2)
+    out = optim(initial_params,inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_hyper = rbind(fit_hyper, out$par)
+    negLL_hyper = c(negLL_hyper, out$value)
+}
+```
+
+```{r}
+paste0('Minimised log-likelihood: ', sum(negLL_hyper));
+```
+
+Fitted k parameter vs. "True" k parameter
+
+```{r}
+plot(true_k_params, fit_hyper[, 1], xlab = '"True" k params (parabolic)', ylab = 'Fitted k params (hyperbolic)')
+abline(0, 1)
+```
+
+Fitted beta parameter vs. "True" beta parameter
+
+```{r}
+plot(true_beta_params, fit_hyper[, 2], xlab = '"True" beta params (parabolic)', ylab = 'Fitted beta params (hyperbolic)')
+abline(0, 1)
+```
+
+## Calculate AIC/BIC to compare models
+
+### Compare Log-Likelihoods
+
+```{r}
+sum(negLL_linear)
+sum(negLL_para)
+sum(negLL_hyper)
+```
+
+### Calculate AIC
+
+$AIC = -2*LL + 2*numParam$
+
+```{r}
+numParam = 2 #% 1 k, 1 beta parameter
+
+aic_linear = -2 * (-negLL_linear) + 2 * numParam;
+aic_para = -2 * (-negLL_para) + 2 * numParam; 
+aic_hyper = -2 * (-negLL_hyper) + 2 * numParam; 
+```
+
+Note: the negLL parameter is actually the log-likelihood with its sign flipped to make it positive (to help the optim function minimise the LL). Here we flip the sign back to get the actual log-likelihood (which confusingly, is a negative number).
+
+```{r}
+sum(aic_linear)
+sum(aic_para)
+sum(aic_hyper)
+```
+
+```{r}
+barplot(c(sum(aic_linear), sum(aic_para), sum(aic_hyper)), names.arg = c("Linear", "Parabolic", "Hyperbolic"), xlab = 'Fitted model', ylab = 'AIC')
+```
+
+### Calculate BIC
+
+$BIC = -2*LL + log(numObs)*numParam$
+
+```{r}
+numParam = 2 # 1 k, 1 beta parameter 
+numObs = nrow(subj_data) # 24, number of observations (trials) for each participant
+
+bic_linear = -2 * (-negLL_linear) + log(numObs) * numParam; 
+bic_para = -2 * (-negLL_para) + log(numObs) * numParam;
+bic_hyper = -2 * (-negLL_hyper) + log(numObs) * numParam;
+```
+
+```{r}
+sum(bic_linear)
+sum(bic_para)
+sum(bic_hyper)
+```
+
+```{r}
+barplot(c(sum(bic_linear), sum(bic_para), sum(bic_hyper)), names.arg = c("Linear", "Parabolic", "Hyperbolic"), xlab = 'Fitted model', ylab = 'BIC')
+```
+
+### Fitting multiple k and beta parameters
+
+In this example dataset, participants earn rewards for a "climate" option or a "food" option.
+
+1.  We can assume that they discount effort the same for both options.
+2.  Or we can assume they discount effort differently, depending on which options the rewards go to.
+
+Let's simulate some data assuming #1, and compare models that test #1 vs. #2
+
+Simulate data based on 1 k and 1 beta parameter
+
+```{r}
+nsims = 100
+data_one_k_one_b_lin = vector("list", nsims)
+
+true_k_params = runif(nsims) * 2
+true_beta_params = runif(nsims) * 3
+
+for (isubj in 1:nsims) {
+    data_one_k_one_b_lin[[isubj]] = simulateData(c(true_k_params[isubj], true_beta_params[isubj]), "one_k_one_beta_linear")
+}
+```
+
+Fit the data to a model assuming 1 k and 1 beta
+
+```{r}
+model_id = "one_k_one_beta_linear"
+lb = c(0, 0)
+ub = c(2, 5)
+nparams = 2
+
+fit_smallmodel = c()
+negLL_smallmodel = c()
+
+for (isubj in 1:nsims) {
+    subj_data = data_one_k_one_b_lin[[isubj]]
+
+    # Fit the data using MLE
+    inputfun = function(params) { fitModel(subj_data, params, model_id) }
+    initial_params = runif(nparams)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+    
+    fit_smallmodel = rbind(fit_smallmodel, out$par)
+    negLL_smallmodel = c(negLL_smallmodel, out$value)
+}
+```
+
+```{r}
+sumnegLL_smallmodel = sum(negLL_smallmodel)
+aic_smallmodel = sum(-2 * (-negLL_smallmodel) + 2 * nparams)
+bic_smallmodel = sum(-2 * (-negLL_smallmodel) + log(nrow(subj_data)) * nparams)
+```
+
+Fit the data to a model assuming 2 k and 2
+
+```{r}
+model_id = "two_k_two_beta_linear" 
+lb = c(0, 0, 0, 0)
+ub = c(2, 2, 5, 5)
+nparams = 4
+
+fit_largemodel = c()
+negLL_largemodel = c()
+
+for (isubj in 1:nsims) {
+    subj_data = data_one_k_one_b_lin[[isubj]]
+
+    # Fit the data using MLE
+    inputfun = function(params) { fitModel(subj_data, params, model_id) }
+    initial_params = runif(nparams)
+    out = optim(initial_params, inputfun, method = "L-BFGS-B", lower = lb, upper = ub)
+
+    fit_largemodel = rbind(fit_largemodel, out$par)
+    negLL_largemodel = c(negLL_largemodel, out$value)
+}
+```
+
+```{r}
+sumnegLL_largemodel = sum(negLL_largemodel)
+aic_largemodel = sum(-2 * (-negLL_largemodel) + 2 * nparams)
+bic_largemodel = sum(-2 * (-negLL_largemodel) + log(nrow(subj_data)) * nparams)
+```
+
+Compare negLL, AIC, and BIC between models
+
+negLL
+
+```{r}
+sumnegLL_smallmodel
+sumnegLL_largemodel
+```
+
+```{r}
+barplot(c(sum(negLL_smallmodel), sum(negLL_largemodel)), names.arg = c("Small model", "Large model"), ylab = "Negative log-likelihood (lower is better)")
+```
+
+AIC
+
+```{r}
+aic_smallmodel
+aic_largemodel
+```
+
+```{r}
+barplot(c(aic_smallmodel, aic_largemodel), names.arg = c("Small model", "Large model"), ylab = "AIC (lower is better)")
+```
+
+BIC
+
+```{r}
+bic_smallmodel
+bic_largemodel
+```
+
+```{r}
+barplot(c(bic_smallmodel, bic_largemodel), names.arg = c("Small model", "Large model"), ylab = "BIC (lower is better)")
+```
